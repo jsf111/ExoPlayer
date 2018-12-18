@@ -52,14 +52,18 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Vector;
 
-/** A DASH {@link MediaPeriod}. */
+/**
+ * A DASH {@link MediaPeriod}.
+ */
 /* package */ final class DashMediaPeriod
     implements MediaPeriod,
-        SequenceableLoader.Callback<ChunkSampleStream<DashChunkSource>>,
-        ChunkSampleStream.ReleaseCallback<DashChunkSource> {
+    SequenceableLoader.Callback<ChunkSampleStream<DashChunkSource>>,
+    ChunkSampleStream.ReleaseCallback<DashChunkSource> {
 
   /* package */ final int id;
   private final DashChunkSource.Factory chunkSourceFactory;
@@ -399,7 +403,7 @@ import java.util.List;
       int trackGroupIndex = streamIndexToTrackGroupIndex[i];
       if (trackGroupIndex == primaryTrackGroupIndex
           && trackGroupInfos[trackGroupIndex].trackGroupCategory
-              == TrackGroupInfo.CATEGORY_PRIMARY) {
+          == TrackGroupInfo.CATEGORY_PRIMARY) {
         return i;
       }
     }
@@ -441,7 +445,21 @@ import java.util.List;
     boolean[] adaptationSetUsedFlags = new boolean[adaptationSetCount];
 
     int groupCount = 0;
+    HashMap<Integer, Vector<Integer>> groupMapping = new HashMap<>();
+    // groupId --> ids with the same group including id
     for (int i = 0; i < adaptationSetCount; i++) {
+      AdaptationSet adaptationSet = adaptationSets.get(i);
+      Vector<Integer> ids = new Vector<>();
+      if (groupMapping.containsKey(adaptationSet.group)) {
+        ids = groupMapping.get(adaptationSet.group);
+      }
+      ids.add(adaptationSet.id);
+      groupMapping.put(adaptationSet.group, ids);
+    }
+
+    for (int i = 0; i < adaptationSetCount; i++) {
+      AdaptationSet adaptationSet = adaptationSets.get(i);
+
       if (adaptationSetUsedFlags[i]) {
         // This adaptation set has already been included in a group.
         continue;
@@ -450,7 +468,23 @@ import java.util.List;
       Descriptor adaptationSetSwitchingProperty = findAdaptationSetSwitchingProperty(
           adaptationSets.get(i).supplementalProperties);
       if (adaptationSetSwitchingProperty == null) {
-        groupedAdaptationSetIndices[groupCount++] = new int[] {i};
+
+        Vector<Integer> groupMap = groupMapping.get(adaptationSet.group);
+
+        if (groupMap.size() > 1) {
+          int[] adaptationSetIndices = new int[1 + groupMap.size()];
+          adaptationSetIndices[0] = i;
+          for (int m = 0; m < groupMap.size(); ++m) {
+            int extraIndex = idToIndexMap.get(groupMap.get(m));
+            adaptationSetUsedFlags[extraIndex] = true;
+            adaptationSetIndices[1 + m] = extraIndex;
+          }
+          groupedAdaptationSetIndices[groupCount++] = adaptationSetIndices;
+
+        } else {
+          groupedAdaptationSetIndices[groupCount++] = new int[]{i};
+        }
+
       } else {
         String[] extraAdaptationSetIds = adaptationSetSwitchingProperty.value.split(",");
         int[] adaptationSetIndices = new int[1 + extraAdaptationSetIds.length];

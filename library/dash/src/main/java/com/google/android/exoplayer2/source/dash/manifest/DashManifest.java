@@ -226,7 +226,7 @@ public class DashManifest implements FilterableManifest<DashManifest> {
         key = keys.poll();
       } while (key.periodIndex == periodIndex && key.groupIndex == adaptationSetIndex);
 
-      copyAdaptationSets.add(new AdaptationSet(adaptationSet.id, adaptationSet.type,
+      copyAdaptationSets.add(new AdaptationSet(adaptationSet.id, adaptationSet.type, adaptationSet.group,
           copyRepresentations, adaptationSet.accessibilityDescriptors,
           adaptationSet.supplementalProperties));
     } while(key.periodIndex == periodIndex);

@@ -273,6 +273,7 @@ public class DashManifestParser extends DefaultHandler
   protected AdaptationSet parseAdaptationSet(XmlPullParser xpp, String baseUrl,
       SegmentBase segmentBase) throws XmlPullParserException, IOException {
     int id = parseInt(xpp, "id", AdaptationSet.ID_UNSET);
+    int group = parseInt(xpp, "group", 0);
     int contentType = parseContentType(xpp);
 
     String mimeType = xpp.getAttributeValue(null, "mimeType");
@@ -359,14 +360,14 @@ public class DashManifestParser extends DefaultHandler
           drmSchemeType, drmSchemeDatas, inbandEventStreams));
     }
 
-    return buildAdaptationSet(id, contentType, representations, accessibilityDescriptors,
+    return buildAdaptationSet(id, contentType, group, representations, accessibilityDescriptors,
         supplementalProperties);
   }
 
-  protected AdaptationSet buildAdaptationSet(int id, int contentType,
+  protected AdaptationSet buildAdaptationSet(int id, int contentType, int group,
       List<Representation> representations, List<Descriptor> accessibilityDescriptors,
       List<Descriptor> supplementalProperties) {
-    return new AdaptationSet(id, contentType, representations, accessibilityDescriptors,
+    return new AdaptationSet(id, contentType, group, representations, accessibilityDescriptors,
         supplementalProperties);
   }
 
